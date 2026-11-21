@@ -74,6 +74,16 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
 #send{flex:none;height:40px;min-width:58px;padding:0 14px;border:0;border-radius:20px;background:var(--yellow);color:#191919;font-weight:650;cursor:pointer}
 #send:disabled{background:var(--field);color:var(--muted)}
 
+/* 表情包 */
+.stk{display:block;max-width:140px;max-height:140px;border-radius:10px}
+#stkBtn{width:40px;height:40px}
+#stkBtn[aria-expanded=true]{color:var(--ink)}
+#stkBtn[hidden]{display:none}
+#stkPanel{max-width:680px;margin:0 auto 8px;display:none;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px;max-height:240px;overflow-y:auto;padding:2px}
+#stkPanel.show{display:grid}
+#stkPanel button{aspect-ratio:1;border:0;padding:5px;border-radius:12px;background:var(--field);cursor:pointer;display:grid;place-items:center}
+#stkPanel img{max-width:100%;max-height:100%;object-fit:contain}
+
 /* 弹层 */
 .layer{position:fixed;inset:0;z-index:10;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.35)}
 .layer.show{display:flex}
@@ -114,7 +124,11 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
 <div id="scroller"><div id="list"></div></div>
 
 <form id="composer">
+  <div id="stkPanel" aria-label="表情包"></div>
   <div class="row">
+    <button class="icon" id="stkBtn" type="button" aria-label="表情包" aria-expanded="false" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="M8 14.5s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5h.01M15 9.5h.01"/></svg>
+    </button>
     <textarea id="input" rows="1" maxlength="4000" placeholder="说点什么…" aria-label="消息"></textarea>
     <button id="send" type="submit">发送</button>
   </div>
@@ -294,6 +308,48 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
     return data.result.structuredContent || {};
   }
 
+  /* ---------- 表情包 ---------- */
+  // 消息里单独一行写 [sticker:名字] 就显示成图
+  const STK = /^\[sticker:([^\]]+)\]$/;
+  let stickers = {};
+
+  function renderPicker() {
+    const panel = $("stkPanel"), names = Object.keys(stickers);
+    panel.textContent = "";
+    $("stkBtn").hidden = !names.length;
+    for (const n of names) {
+      const s = stickers[n];
+      const b = document.createElement("button");
+      b.type = "button";
+      b.title = n + (s.description ? "：" + s.description : "");
+      b.setAttribute("aria-label", n);
+      const img = document.createElement("img");
+      img.src = s.url;
+      img.alt = n;
+      img.loading = "lazy";
+      b.append(img);
+      b.addEventListener("click", () => { togglePicker(false); sendBody("[sticker:" + n + "]", false); });
+      panel.append(b);
+    }
+  }
+  function togglePicker(open) {
+    const panel = $("stkPanel");
+    const show = open == null ? !panel.classList.contains("show") : open;
+    panel.classList.toggle("show", show);
+    $("stkBtn").setAttribute("aria-expanded", String(show));
+    if (show) input.blur();
+  }
+  async function loadStickers() {
+    try {
+      const r = await call("list_stickers");
+      stickers = Object.fromEntries((r.stickers || []).filter((s) => s.name && s.url).map((s) => [s.name, s]));
+      renderPicker();
+      render(null, true);
+    } catch {
+      // MCP 还没加 list_stickers 时，表情包标记先按文字显示
+    }
+  }
+
   /* ---------- 渲染 ---------- */
   const tz = { timeZone: "Asia/Singapore" };
   const timeOf = (d) => d.toLocaleTimeString("zh-CN", { ...tz, hour: "2-digit", minute: "2-digit", hour12: false });
@@ -304,6 +360,7 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
     const sc = $("scroller"), list = $("list");
     const nearBottom = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 140;
     const top = sc.scrollTop;
+    const toBottom = !keepScroll && (!newIds || nearBottom);
     list.textContent = "";
     if (!msgs.length) {
       const e = document.createElement("div");
@@ -346,10 +403,22 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
         name.textContent = nameOf(m);
         const line = document.createElement("div");
         line.className = "line";
-        const bubble = document.createElement("div");
-        bubble.className = "bubble";
-        bubble.textContent = text;
-        line.append(bubble);
+        const hit = text.match(STK);
+        const stk = hit && stickers[hit[1].trim()];
+        if (stk) {
+          const img = document.createElement("img");
+          img.className = "stk";
+          img.src = stk.url;
+          img.alt = "[" + hit[1].trim() + "]";
+          // 图片加载完会把页面撑高，原本在底部就继续贴底
+          if (toBottom) img.addEventListener("load", () => { sc.scrollTop = sc.scrollHeight; });
+          line.append(img);
+        } else {
+          const bubble = document.createElement("div");
+          bubble.className = "bubble";
+          bubble.textContent = text;
+          line.append(bubble);
+        }
         if (i === parts.length - 1) {
           const time = document.createElement("span");
           time.className = "time";
@@ -363,7 +432,7 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
       prev = m;
     }
     if (keepScroll) sc.scrollTop = top;
-    else if (!newIds || nearBottom) sc.scrollTop = sc.scrollHeight;
+    else if (toBottom) sc.scrollTop = sc.scrollHeight;
   }
 
   async function refresh(full) {
@@ -403,23 +472,26 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
       $("composer").requestSubmit();
     }
   });
-  $("composer").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const body = input.value.trim();
+  async function sendBody(body, fromInput) {
     if (!body || !roomId) return;
     send.disabled = true;
     try {
       await call("send_message", { room_id: roomId, body });
-      input.value = "";
-      autosize();
+      if (fromInput) { input.value = ""; autosize(); }
       await refresh(false);
     } catch (err) {
       setStatus("没发出去：" + err.message);
     } finally {
       send.disabled = false;
-      input.focus();
+      if (fromInput) input.focus();
     }
+  }
+  $("composer").addEventListener("submit", (e) => {
+    e.preventDefault();
+    sendBody(input.value.trim(), true);
   });
+  $("stkBtn").addEventListener("click", () => togglePicker());
+  input.addEventListener("focus", () => togglePicker(false));
 
   /* ---------- 设置 ---------- */
   function showSetup(msg) {
@@ -452,6 +524,7 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
       lastId = null;
       await refresh(true);
       startPolling();
+      loadStickers();
     } catch (e) {
       if (e.auth) showSetup("令牌不对，再看一眼");
       else setStatus("连不上：" + e.message);
