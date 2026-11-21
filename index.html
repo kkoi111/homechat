@@ -88,6 +88,63 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
 #stkPreview{display:block;margin:0 auto;max-width:140px;max-height:140px;border-radius:10px}
 #stkPreview[hidden]{display:none}
 #addStk .card{max-height:100%;overflow-y:auto}
+
+/* 引用 和 @ */
+.quote{font-size:calc(var(--fs) - 3px);color:var(--muted);background:rgba(0,0,0,.06);border-left:3px solid var(--muted);border-radius:6px;padding:4px 8px;margin:0 0 4px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.msg.mine .col{align-items:flex-end}
+.msg.flash .bubble,.msg.flash .stk{outline:2px solid #f5a623;outline-offset:2px}
+.bubble,.stk{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#replyBar{max-width:680px;margin:0 auto 6px;display:none;align-items:center;gap:8px;padding:6px 6px 6px 12px;border-radius:12px;background:var(--field);font-size:13px;color:var(--muted)}
+#replyBar.show{display:flex}
+#replyText{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#replyBar button{border:0;background:none;font-size:20px;line-height:1;padding:2px 8px;color:var(--muted);cursor:pointer}
+.msg{position:relative;touch-action:pan-y}
+.swipe-ico{position:absolute;left:-30px;top:50%;transform:translateY(-50%);opacity:0;font-size:18px;color:var(--muted);pointer-events:none}
+#scroller{overflow-x:hidden}
+/* 小动作 */
+.event{align-self:center;margin:10px 0 2px;padding:2px 10px;color:var(--muted);font-size:calc(var(--fs) - 3px);font-weight:300;letter-spacing:.02em;text-align:center}
+#list .av{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#radial{position:fixed;inset:0;z-index:25;display:none;background:rgba(0,0,0,0);transition:background .2s}
+#radial.open{background:rgba(0,0,0,.18)}
+#radial.show{display:block}
+#radial .rb{position:absolute;width:48px;height:48px;margin:-24px 0 0 -24px;border:0;border-radius:50%;background:var(--panel);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.18);display:grid;place-items:center;cursor:pointer;
+  transform:translate(var(--dx),var(--dy)) scale(1);transition:transform .22s cubic-bezier(.2,1.3,.4,1),background .12s,color .12s;transition-delay:var(--d)}
+#radial:not(.open) .rb{transform:translate(0,0) scale(.3);transition-delay:0s}
+#radial .rb.on{background:#8e959e;color:#fff;transform:translate(var(--dx),var(--dy)) scale(1.24);box-shadow:0 0 0 5px rgba(142,149,158,.28),0 8px 20px rgba(0,0,0,.2)}
+#radial .rb svg{width:24px;height:24px}
+#radial .rlabel{position:absolute;transform:translate(-50%,-50%);padding:4px 12px;border-radius:999px;background:rgba(25,25,25,.82);color:#fff;font-size:13px;white-space:nowrap;opacity:0;transition:opacity .15s;pointer-events:none}
+#radial.open .rlabel{opacity:1}
+#hap{position:fixed;left:-100px;top:0;opacity:0;pointer-events:none}
+@keyframes fxUp{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-170%) scale(1)}}
+@media (prefers-reduced-motion:no-preference){
+  .av.fx-kiss{animation:fxKiss 1.8s}
+  .av.fx-squish{animation:fxShrink 3.4s cubic-bezier(.3,1.4,.5,1)}
+  .av.fx-poke{animation:fxPokeAway 2s cubic-bezier(.3,1.3,.5,1)}
+  .av.fx-kick{animation:fxKick 3.8s}
+}
+@keyframes fxKiss{15%{transform:scale(1.08)}30%{transform:scale(1)}}
+@keyframes fxShrink{0%{transform:scale(1)}8%{transform:scale(.5)}88%{transform:scale(.5)}100%{transform:scale(1)}}
+@keyframes fxPokeAway{0%{transform:none}12%{transform:translate(var(--px),var(--py)) rotate(var(--pr))}78%{transform:translate(var(--px),var(--py)) rotate(var(--pr))}100%{transform:none}}
+@keyframes fxKick{0%{transform:none;opacity:1}6%{transform:scale(.88,1.1)}20%{transform:translate(90px,-80px) rotate(300deg) scale(.4);opacity:0}84%{transform:translate(-36px,0) scale(.8);opacity:0}100%{transform:none;opacity:1}}
+.heart-ring{position:fixed;z-index:30;pointer-events:none;width:0;height:0}
+.heart-ring svg{position:absolute;width:var(--hs);height:var(--hs);margin:calc(var(--hs) / -2) 0 0 calc(var(--hs) / -2);color:#f29abf;transform:translate(var(--x),var(--y)) scale(0);animation:ringPop 1.9s cubic-bezier(.3,1.5,.5,1) forwards;animation-delay:var(--d)}
+@keyframes ringPop{12%{transform:translate(var(--x),var(--y)) scale(1.15)}22%,72%{transform:translate(var(--x),var(--y)) scale(1);opacity:1}100%{transform:translate(calc(var(--x) * 1.35),calc(var(--y) * 1.35)) scale(.7);opacity:0}}
+/* 每日小结：右下角小胶囊，点开是每个人的分条活动 */
+#dayTip{position:absolute;right:14px;bottom:calc(100% + 40px);max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;align-items:stretch;gap:5px;min-width:150px;pointer-events:none}
+#dayTip.show{pointer-events:auto}
+#dayTip .it{display:grid;grid-template-columns:2.4em auto 1fr auto;column-gap:6px;align-items:baseline;font-variant-numeric:tabular-nums;padding:3px 12px;border-radius:999px;background:color-mix(in srgb,var(--panel) 85%,transparent);box-shadow:0 3px 10px rgba(0,0,0,.1);color:var(--muted);font-size:12px;font-weight:300;white-space:nowrap;
+  opacity:0;transform:translateY(8px);transition:opacity .2s,transform .26s cubic-bezier(.2,1.3,.4,1);transition-delay:var(--d)}
+#dayTip.show .it{opacity:1;transform:none}
+#dayTip .it b{color:var(--ink);font-weight:400}
+#dayTip .it .n{grid-column:4;text-align:right}
+@keyframes pillNudge{30%{transform:scale(1.12)}60%{transform:scale(.97)}}
+#tipPill.nudge{animation:pillNudge .5s}
+#tipPill{position:absolute;right:14px;bottom:calc(100% + 8px);padding:3px 10px;border:0;border-radius:999px;background:color-mix(in srgb,var(--panel) 85%,transparent);box-shadow:0 3px 10px rgba(0,0,0,.1);color:var(--muted);font-size:12px;font-weight:300;cursor:pointer;display:none}
+#tipPill.show{display:block}
+#composer{position:relative}
+#msgMenu{position:fixed;z-index:20;display:none;background:var(--panel);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.2);padding:4px}
+#msgMenu.show{display:flex}
+#msgMenu button{border:0;background:none;padding:9px 16px;font-size:15px;cursor:pointer;border-radius:8px}
 #stkError{min-height:18px;text-align:center;color:var(--muted);font-size:14px}
 
 /* 弹层 */
@@ -129,7 +186,12 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
 
 <div id="scroller"><div id="list"></div></div>
 
+<div id="msgMenu" role="menu"><button type="button" id="mmQuote" role="menuitem">引用</button><button type="button" id="mmCopy" role="menuitem">复制</button></div>
+
 <form id="composer">
+  <div id="dayTip" role="status"></div>
+  <button type="button" id="tipPill" aria-label="打开今日小结"></button>
+  <div id="replyBar"><span id="replyText"></span><button type="button" id="replyClose" aria-label="取消引用">×</button></div>
   <div id="stkPanel" aria-label="表情包"></div>
   <div class="row">
     <button class="icon" id="stkBtn" type="button" aria-label="表情包" aria-expanded="false" hidden>
@@ -173,6 +235,9 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
   </div>
 </div>
 <input type="file" id="filePick" accept="image/*" hidden>
+
+<label id="hap" aria-hidden="true"><input type="checkbox" switch tabindex="-1"></label>
+<div id="radial" aria-label="小动作"><div class="rlabel" id="rlabel"></div></div>
 
 <div class="layer" id="addStk">
   <div class="card">
@@ -477,6 +542,353 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
     }
   }
 
+  /* ---------- 小动作 ---------- */
+  // 消息里单独一行 [互动:动作:对象id]，比如 [互动:捏一捏:ren]
+  const ACTS = [
+    { k: "亲亲", ch: "亲", v: "亲了亲", fx: "kiss", c: "#f06a9b" },
+    { k: "捏捏", ch: "捏", v: "捏了捏", fx: "squish", c: "#f29a3e" },
+    { k: "戳戳", ch: "戳", v: "戳了戳", fx: "poke", c: "#4f8ef7" },
+    { k: "踢飞", ch: "踢", v: "一脚踢飞了", fx: "kick", c: "#e5484d" },
+  ];
+  const ICON_ATTR = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
+  const ICON = {
+    // 爱心
+    kiss: '<path fill="currentColor" d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/>',
+    // 两根手指捏在一起
+    squish: '<path d="M3.8 4.3 13.3 8.5A1.9 1.9 0 0 1 11.7 11.9L2.2 7.7"/><path d="M3.8 19.7 13.3 15.5A1.9 1.9 0 0 0 11.7 12.1L2.2 16.3"/><path d="M16.4 12h2.4M16.6 9.1l1.9-1M16.6 14.9l1.9 1"/>',
+    // 一根手指
+    poke: '<path d="M2.6 18.6 12.6 8.6A2 2 0 0 1 15.4 11.4L5.4 21.4"/><path d="M17.3 6.7l1.7-1.7M18.4 10.4h2.4M13.6 5.6V3.2"/>',
+    // 爪子脚印
+    kick: '<path d="M7.6 17.6c0-2.6 2-4.8 4.4-4.8s4.4 2.2 4.4 4.8c0 1.5-1.1 2.2-2.2 2.2-.9 0-1.3-.5-2.2-.5s-1.3.5-2.2.5c-1.1 0-2.2-.7-2.2-2.2z"/><ellipse cx="5.6" cy="11.2" rx="1.6" ry="2.1" transform="rotate(-25 5.6 11.2)"/><ellipse cx="9.4" cy="6.9" rx="1.7" ry="2.3" transform="rotate(-8 9.4 6.9)"/><ellipse cx="14.6" cy="6.9" rx="1.7" ry="2.3" transform="rotate(8 14.6 6.9)"/><ellipse cx="18.4" cy="11.2" rx="1.6" ry="2.1" transform="rotate(25 18.4 11.2)"/>',
+  };
+  const svgOf = (fx) => "<svg " + ICON_ATTR + ">" + ICON[fx] + "</svg>";
+  // iPhone 网页不支持震动接口，借 iOS 开关控件自带的触感：点一下隐藏的开关就会“咔哒”一下
+  function haptic() {
+    try { if (navigator.vibrate) navigator.vibrate(10); } catch {}
+    try { $("hap").click(); } catch {}
+  }
+  const ACT_BY = Object.fromEntries(ACTS.map((a) => [a.k, a]));
+  const EVT = /^\[互动:([^:\]]+):([a-z]+)\]$/;
+
+  // ---- 长按头像，头顶弹出一圈圆形菜单；按住滑过去松手就选中，也可以松手后再点 ----
+  const radial = $("radial"), rlabel = $("rlabel");
+  let radialTarget = null, radialHot = null, radialDragging = false, longPressed = false;
+  for (const a of ACTS) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "rb";
+    b.dataset.k = a.k;
+    b.setAttribute("aria-label", a.k);
+    b.innerHTML = svgOf(a.fx);
+    b.style.setProperty("--c", a.c);
+    b.addEventListener("click", () => chooseAct(a.k));
+    radial.append(b);
+  }
+  function openRadial(targetId, rect) {
+    radialTarget = targetId;
+    const R = 84, pad = 28;
+    let cx = rect.left + rect.width / 2;
+    cx = Math.max(R + pad, Math.min(cx, innerWidth - R - pad));
+    let cy = rect.top + rect.height / 2;
+    const up = cy - R - 40 > 0; // 上面放不下就往下开
+    const A0 = Math.PI * 150 / 180, A1 = Math.PI * 30 / 180; // 四个按钮，弧收窄一点
+    const btns = [...radial.querySelectorAll(".rb")];
+    btns.forEach((b, i) => {
+      const ang = A0 - (i / (btns.length - 1)) * (A0 - A1); // 从左到右一道弧
+      b.style.left = cx + "px";
+      b.style.top = cy + "px";
+      b.style.setProperty("--dx", Math.cos(ang) * R + "px");
+      b.style.setProperty("--dy", (up ? -1 : 1) * Math.sin(ang) * R + "px");
+      b.style.setProperty("--d", (i * 0.018) + "s");
+      b.classList.remove("on");
+    });
+    rlabel.style.left = cx + "px";
+    rlabel.style.top = (cy + (up ? -R * 0.35 : R * 0.35)) + "px";
+    rlabel.textContent = "对" + personName(targetId) + "…";
+    radial.classList.add("show");
+    requestAnimationFrame(() => radial.classList.add("open"));
+    haptic();
+  }
+  function closeRadial() {
+    radial.classList.remove("open", "show");
+    radialTarget = null; radialHot = null; radialDragging = false;
+  }
+  function hotAt(x, y) {
+    const el = document.elementFromPoint(x, y);
+    const b = el && el.closest && el.closest("#radial .rb");
+    if (b === radialHot) return;
+    if (radialHot) radialHot.classList.remove("on");
+    radialHot = b || null;
+    if (radialHot) { radialHot.classList.add("on"); rlabel.textContent = radialHot.dataset.k; haptic(); }
+    else rlabel.textContent = "对" + personName(radialTarget) + "…";
+  }
+  function chooseAct(k) {
+    const t = radialTarget;
+    closeRadial();
+    if (!t) return;
+    haptic();
+    playFx(t, k);
+    sendBody("[互动:" + k + ":" + t + "]", false);
+  }
+  radial.addEventListener("pointerdown", (e) => { if (e.target === radial || e.target === rlabel) closeRadial(); });
+  document.addEventListener("pointermove", (e) => { if (radialDragging) hotAt(e.clientX, e.clientY); });
+  document.addEventListener("pointerup", () => {
+    if (!radialDragging) return;
+    radialDragging = false;
+    if (radialHot) chooseAct(radialHot.dataset.k); // 滑到某个按钮上松手 = 选中
+  });
+
+  function attachAvatar(av, targetId) {
+    let t = null;
+    av.addEventListener("pointerdown", (e) => {
+      e.stopPropagation(); // 别让整行的右滑引用也动起来
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      longPressed = false;
+      clearTimeout(t);
+      t = setTimeout(() => {
+        longPressed = true;
+        radialDragging = true;
+        try { av.releasePointerCapture(e.pointerId); } catch {}
+        openRadial(targetId, av.getBoundingClientRect());
+      }, 380);
+    });
+    const cancel = () => clearTimeout(t);
+    av.addEventListener("pointerup", cancel);
+    av.addEventListener("pointercancel", cancel);
+    av.addEventListener("pointerleave", () => { if (!radialDragging) cancel(); });
+    av.addEventListener("contextmenu", (e) => e.preventDefault());
+    // 轻点一下 = 戳一戳
+    av.addEventListener("click", () => {
+      if (longPressed) { longPressed = false; return; }
+      haptic();
+      playFx(targetId, "戳戳");
+      sendBody("[互动:戳戳:" + targetId + "]", false);
+    });
+  }
+
+  // 在对方头像上播动画：顶栏那个，加上聊天里最近一个
+  function playFx(targetId, actName, listOnly) {
+    const a = ACT_BY[actName];
+    if (!a) return;
+    const els = listOnly ? [] : [...document.querySelectorAll('.faces .av[data-id="' + targetId + '"]')];
+    const inList = [...document.querySelectorAll('#list .av[data-who="' + targetId + '"]')].filter((x) => x.offsetHeight);
+    if (inList.length) els.push(inList[inList.length - 1]);
+    for (const el of els) {
+      el.classList.remove("fx-" + a.fx);
+      void el.offsetWidth; // 重新触发动画
+      el.classList.add("fx-" + a.fx);
+      el.addEventListener("animationend", () => el.classList.remove("fx-" + a.fx), { once: true });
+      if (a.fx === "poke") {
+        // 往随机一个方向被戳开
+        const ang = Math.random() * Math.PI * 2;
+        el.style.setProperty("--px", Math.round(Math.cos(ang) * 34) + "px");
+        el.style.setProperty("--py", Math.round(Math.sin(ang) * 22) + "px");
+        el.style.setProperty("--pr", Math.round((Math.random() - .5) * 40) + "deg");
+      }
+      if (a.fx === "kiss") heartRing(el.getBoundingClientRect());
+    }
+  }
+  // 亲亲：头像周围围一圈小爱心
+  function heartRing(r) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const ring = document.createElement("div");
+    ring.className = "heart-ring";
+    ring.style.left = (r.left + r.width / 2) + "px";
+    ring.style.top = (r.top + r.height / 2) + "px";
+    const n = 8, R = r.width * 0.78, hs = Math.max(10, r.width * 0.3);
+    for (let i = 0; i < n; i++) {
+      const ang = (i / n) * Math.PI * 2 - Math.PI / 2;
+      const h = document.createElement("div");
+      h.innerHTML = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 21 5 14C3.5 12.5 2 10.8 2 8.5A5.5 5.5 0 0 1 7.5 3c1.8 0 3 .5 4.5 2 1.5-1.5 2.7-2 4.5-2A5.5 5.5 0 0 1 22 8.5c0 2.3-1.5 4-3 5.5z"/></svg>';
+      const sv = h.firstChild;
+      sv.style.setProperty("--x", Math.cos(ang) * R + "px");
+      sv.style.setProperty("--y", Math.sin(ang) * R + "px");
+      sv.style.setProperty("--hs", hs + "px");
+      sv.style.setProperty("--d", (i * 0.05) + "s");
+      ring.append(sv);
+    }
+    document.body.append(ring);
+    setTimeout(() => ring.remove(), 2400);
+  }
+  function eventSteps(a, t, fx) {
+    if (fx === "squish") return [{ t: a + " 捏了捏 " + t + "，" + t + " 缩成了一小团" }, { t: a + " 捏了捏 " + t + "，" + t + " 又弹回来了", at: 3200 }];
+    if (fx === "poke") return [{ t: a + " 戳了戳 " + t + "，" + t + " 被戳到了一边" }, { t: a + " 戳了戳 " + t + "，" + t + " 又挪回来了", at: 1800 }];
+    if (fx === "kick") return [{ t: a + " 一脚把 " + t + " 踢飞了" }, { t: a + " 一脚把 " + t + " 踢飞了，" + t + " 自己走回来了", at: 3400 }];
+    return [{ t: a + " 亲了亲 " + t }];
+  }
+  /* ---------- 每日小结 ---------- */
+  const TIP_MIN = 10; // 今天累计到这么多下，胶囊才出现
+  const TIP_NUDGE = [10, 30, 66, 100]; // 跨过这几道门槛时胶囊跳一下
+  const todayKey = () => new Date().toLocaleDateString("zh-CN", { timeZone: "Asia/Singapore" });
+  function todayStats() {
+    const key = todayKey(), byPerson = new Map();
+    let total = 0;
+    for (const m of msgs) {
+      if (new Date(m.created_at).toLocaleDateString("zh-CN", { timeZone: "Asia/Singapore" }) !== key) continue;
+      const ev = String(m.body).trim().match(EVT);
+      if (!ev || !ACT_BY[ev[1]]) continue;
+      total++;
+      if (!byPerson.has(m.author_id)) byPerson.set(m.author_id, new Map());
+      const k = ev[1] + "|" + ev[2], mp = byPerson.get(m.author_id);
+      mp.set(k, (mp.get(k) || 0) + 1);
+    }
+    return { total, byPerson };
+  }
+  const SHORT = { 亲亲: "亲了", 捏捏: "捏了", 戳戳: "戳了", 踢飞: "踢飞" };
+  function buildTip(st) {
+    const box = $("dayTip");
+    box.textContent = "";
+    const order = PEOPLE.map((p) => p.id).filter((id) => st.byPerson.has(id))
+      .concat([...st.byPerson.keys()].filter((id) => !BY_ID[id]));
+    const rows = [];
+    for (const id of order) {
+      const items = [...st.byPerson.get(id).entries()].sort((a, b) => b[1] - a[1]);
+      for (const [k, c] of items) {
+        const [act, to] = k.split("|");
+        rows.push([personName(id), SHORT[act], to === id ? "自己" : personName(to), "× " + c]);
+      }
+    }
+    // 一条一个小胶囊，从下往上依次冒出来
+    rows.forEach(([who, act, to, n], i) => {
+      const it = document.createElement("div");
+      it.className = "it";
+      const b = document.createElement("b");
+      b.textContent = who;
+      const a = document.createElement("span");
+      a.textContent = act;
+      const t = document.createElement("span");
+      t.textContent = to;
+      const c = document.createElement("span");
+      c.className = "n";
+      c.textContent = n;
+      it.append(b, a, t, c);
+      it.style.setProperty("--d", ((rows.length - 1 - i) * 0.035) + "s");
+      box.append(it);
+    });
+  }
+  function updatePill(nudge) {
+    const st = todayStats(), pill = $("tipPill");
+    if (st.total < TIP_MIN) { pill.classList.remove("show"); $("dayTip").classList.remove("show"); return; }
+    pill.textContent = "今日 · " + st.total;
+    pill.classList.add("show");
+    if ($("dayTip").classList.contains("show")) buildTip(st);
+    if (nudge) { pill.classList.remove("nudge"); void pill.offsetWidth; pill.classList.add("nudge"); }
+  }
+  $("tipPill").addEventListener("click", () => {
+    const box = $("dayTip");
+    if (box.classList.contains("show")) { box.classList.remove("show"); return; }
+    buildTip(todayStats());
+    box.classList.add("show");
+  });
+  document.addEventListener("pointerdown", (e) => {
+    if (!e.target.closest("#dayTip,#tipPill")) $("dayTip").classList.remove("show");
+  });
+  // 新消息进来时刷新胶囊；同一天跨过新门槛只跳一次
+  function checkTip() {
+    const st = todayStats();
+    const lv = [...TIP_NUDGE].reverse().find((n) => st.total >= n) || 0;
+    const k = "hc.tip." + todayKey();
+    const shown = Number(store.get(k) || 0);
+    if (lv > shown) store.set(k, String(lv));
+    updatePill(lv > shown);
+  }
+
+  const personName = (id) => nickOf(id) || (BY_ID[id] && BY_ID[id].name) || id;
+
+  /* ---------- 引用 ---------- */
+  const shortText = (body, n = 40) => {
+    const one = String(body).replace(/^\[sticker:([^\]]+)\]$/gm, "[表情包] $1").replace(/\s+/g, " ").trim();
+    return one.length > n ? one.slice(0, n) + "…" : one;
+  };
+  let replyTarget = null, menuMsg = null, pressTimer = null;
+  function setReply(m) {
+    replyTarget = m;
+    $("replyText").textContent = "回复 " + nameOf(m) + "：" + shortText(m.body);
+    $("replyBar").classList.add("show");
+    input.focus();
+  }
+  function clearReply() { replyTarget = null; $("replyBar").classList.remove("show"); }
+  $("replyClose").addEventListener("click", clearReply);
+
+  function openMenu(m, x, y) {
+    menuMsg = m;
+    const menu = $("msgMenu");
+    menu.classList.add("show");
+    const w = menu.offsetWidth, h = menu.offsetHeight;
+    menu.style.left = Math.max(8, Math.min(x - w / 2, innerWidth - w - 8)) + "px";
+    menu.style.top = Math.max(8, y - h - 12) + "px";
+  }
+  const closeMenu = () => { $("msgMenu").classList.remove("show"); menuMsg = null; };
+  document.addEventListener("pointerdown", (e) => { if (!e.target.closest("#msgMenu")) closeMenu(); }, true);
+  $("mmQuote").addEventListener("click", () => { if (menuMsg) setReply(menuMsg); closeMenu(); });
+  $("mmCopy").addEventListener("click", () => {
+    if (menuMsg && navigator.clipboard) navigator.clipboard.writeText(menuMsg.body).catch(() => {});
+    closeMenu();
+  });
+  // 长按（手机）或右键（电脑）弹出 引用 / 复制
+  function attachPress(el, m) {
+    el.addEventListener("pointerdown", (e) => {
+      clearTimeout(pressTimer);
+      const x = e.clientX, y = e.clientY;
+      pressTimer = setTimeout(() => openMenu(m, x, y), 450);
+    });
+    for (const ev of ["pointerup", "pointerleave", "pointercancel", "pointermove"]) {
+      el.addEventListener(ev, (e) => {
+        if (ev === "pointermove" && Math.abs(e.movementX) + Math.abs(e.movementY) < 4) return;
+        clearTimeout(pressTimer);
+      });
+    }
+    el.addEventListener("contextmenu", (e) => { e.preventDefault(); openMenu(m, e.clientX, e.clientY); });
+  }
+
+  // 右滑一条消息就引用它（像微信那样）
+  function attachSwipe(row, m) {
+    const ico = document.createElement("span");
+    ico.className = "swipe-ico";
+    ico.textContent = "↩";
+    row.append(ico);
+    let x0 = 0, y0 = 0, dx = 0, active = false, decided = false, horiz = false;
+    row.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      x0 = e.clientX; y0 = e.clientY; dx = 0; active = true; decided = false; horiz = false;
+    });
+    row.addEventListener("pointermove", (e) => {
+      if (!active) return;
+      const mx = e.clientX - x0, my = e.clientY - y0;
+      if (!decided) {
+        if (Math.abs(mx) < 8 && Math.abs(my) < 8) return;
+        decided = true;
+        horiz = mx > 0 && Math.abs(mx) > Math.abs(my) * 1.3;
+        if (!horiz) { active = false; return; }
+        clearTimeout(pressTimer);
+        try { row.setPointerCapture(e.pointerId); } catch {}
+        row.style.transition = "none";
+      }
+      dx = Math.max(0, Math.min(mx, 90));
+      row.style.transform = "translateX(" + dx + "px)";
+      ico.style.opacity = String(Math.min(1, dx / 60));
+    });
+    const end = () => {
+      if (!active) return;
+      active = false;
+      if (!horiz) return;
+      row.style.transition = "transform .2s";
+      row.style.transform = "";
+      ico.style.opacity = "0";
+      if (dx >= 60) { setReply(m); if (navigator.vibrate) navigator.vibrate(10); }
+    };
+    row.addEventListener("pointerup", end);
+    row.addEventListener("pointercancel", end);
+  }
+
+  function jumpTo(id) {
+    const el = $("list").querySelector('[data-mid="' + id + '"]');
+    if (!el) { setStatus("那条太早了，没加载出来"); setTimeout(() => setStatus(null), 2500); return; }
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.classList.add("flash");
+    setTimeout(() => el.classList.remove("flash"), 1400);
+  }
+
   /* ---------- 渲染 ---------- */
   const tz = { timeZone: "Asia/Singapore" };
   const timeOf = (d) => d.toLocaleTimeString("zh-CN", { ...tz, hour: "2-digit", minute: "2-digit", hour12: false });
@@ -510,9 +922,26 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
       const mine = me && m.author_id === me.id;
       const joined = prev && prev.author_id === m.author_id && d - new Date(prev.created_at) < 3 * 60 * 1000;
       // 一条消息按换行拆成几个短气泡
+      const isNew = newIds && newIds.has(m.id);
+      const ev = String(m.body).trim().match(EVT);
+      if (ev && ACT_BY[ev[1]]) {
+        const line = document.createElement("div");
+        line.className = "event";
+        line.dataset.mid = m.id;
+        const steps = eventSteps(nameOf(m), ev[2] === m.author_id ? "自己" : personName(ev[2]), ACT_BY[ev[1]].fx);
+        // 新来的动作：先显示“正在发生”，动画结束再更新成结果；旧的直接显示结果
+        if (isNew && steps.length > 1) {
+          line.textContent = steps[0].t;
+          setTimeout(() => { line.textContent = steps[1].t; }, steps[1].at);
+        } else line.textContent = steps[steps.length - 1].t;
+        list.append(line);
+        // 自己发的：顶栏头像点击时已经在动了，列表重画后只补列表里的头像
+        if (isNew) setTimeout(() => playFx(ev[2], ev[1], me && m.author_id === me.id), 50);
+        prev = null;
+        continue;
+      }
       const parts = String(m.body).split(/\n+/).map((s) => s.trim()).filter(Boolean);
       if (!parts.length) parts.push(String(m.body));
-      const isNew = newIds && newIds.has(m.id);
       parts.forEach((text, i) => {
         const row = document.createElement("div");
         row.className = "msg" + (mine ? " mine" : "") + (joined || i > 0 ? " cont" : "") + (isNew ? " new" : "");
@@ -522,7 +951,9 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
         av.className = "av";
         av.setAttribute("aria-label", "换头像");
         paintAvatar(av, m.author_id, nameOf(m));
-        av.addEventListener("click", openAvatars);
+        av.dataset.who = m.author_id;
+        av.setAttribute("aria-label", "轻点戳" + nameOf(m) + "，长按更多");
+        attachAvatar(av, m.author_id);
         const col = document.createElement("div");
         col.className = "col";
         const name = document.createElement("div");
@@ -541,11 +972,13 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
           img.alt = "[" + hit[1].trim() + "]";
           // 图片加载完会把页面撑高，原本在底部就继续贴底
           if (toBottom) img.addEventListener("load", () => { sc.scrollTop = sc.scrollHeight; });
+          attachPress(img, m);
           line.append(img);
         } else {
           const bubble = document.createElement("div");
           bubble.className = "bubble";
           bubble.textContent = text;
+          attachPress(bubble, m);
           line.append(bubble);
         }
         if (i === parts.length - 1) {
@@ -554,8 +987,20 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
           time.textContent = timeOf(d);
           line.append(time);
         }
-        col.append(name, line);
+        col.append(name);
+        if (i === 0) {
+          row.dataset.mid = m.id;
+          if (m.reply) {
+            const q = document.createElement("div");
+            q.className = "quote";
+            q.textContent = (nickOf(m.reply.author_id) || m.reply.author_name) + "：" + m.reply.body;
+            q.addEventListener("click", () => jumpTo(m.reply.id));
+            col.append(q);
+          }
+        }
+        col.append(line);
         row.append(av, col);
+        attachSwipe(row, m);
         list.append(row);
       });
       prev = m;
@@ -573,8 +1018,8 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
       const r = await call("get_messages", args);
       if (rid !== roomId) return;
       const got = r.messages || [];
-      if (full || args.after_id == null) { msgs = got; render(null); }
-      else if (got.length) { msgs = msgs.concat(got).slice(-300); render(new Set(got.map((m) => m.id))); }
+      if (full || args.after_id == null) { msgs = got; render(null); checkTip(); }
+      else if (got.length) { msgs = msgs.concat(got).slice(-300); render(new Set(got.map((m) => m.id))); checkTip(); }
       if (r.next_after_id != null) lastId = r.next_after_id;
       setStatus(null);
     } catch (e) {
@@ -595,6 +1040,7 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
   const input = $("input"), send = $("send");
   function autosize() { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 130) + "px"; }
   input.addEventListener("input", autosize);
+
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing && matchMedia("(pointer: fine)").matches) {
       e.preventDefault();
@@ -605,7 +1051,10 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
     if (!body || !roomId) return;
     send.disabled = true;
     try {
-      await call("send_message", { room_id: roomId, body });
+      const args = { room_id: roomId, body };
+      if (replyTarget) args.reply_to = replyTarget.id;
+      await call("send_message", args);
+      clearReply();
       if (fromInput) { input.value = ""; autosize(); }
       await refresh(false);
     } catch (err) {

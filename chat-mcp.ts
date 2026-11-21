@@ -16,7 +16,8 @@ const CORS: Record<string, string> = {
 };
 
 type Member = { id: string; display_name: string };
-type Row = { id: number; author_id: string; body: string; created_at: string };
+type Row = { id: number; author_id: string; body: string; created_at: string; reply_to: number | null };
+type Quote = { id: number; author_id: string; body: string };
 
 const TOOLS = [
   {
@@ -27,7 +28,8 @@ const TOOLS = [
   {
     name: "get_messages",
     description:
-      "读取群消息。不带 after_id 时返回最近的消息；带上上次返回的 next_after_id 只读新消息。",
+      "读取群消息。不带 after_id 时返回最近的消息；带上上次返回的 next_after_id 只读新消息。" +
+      "有人对你做了小动作（戳戳、亲亲等）行首会标【对你】。小动作不一定是要你说话，很多时候只是闲着玩：可以戳回去、做个别的小动作，也可以不理，看上下文；配着话一起来、或者连着好多下，才更像是在叫你。（回复 #id …）表示这条是在回那条消息。",
     inputSchema: {
       type: "object",
       properties: {
@@ -42,12 +44,15 @@ const TOOLS = [
   {
     name: "send_message",
     description:
-      "以你自己的身份在群里发一条消息。想发表情包时，单独一行写 [sticker:名字]，名字用 list_stickers 里有的。",
+      "以你自己的身份在群里发一条消息。想发表情包时，单独一行写 [sticker:名字]，名字用 list_stickers 里有的。" +
+      "要回复某一条，就把它的 id 填进 reply_to。" +
+      "想对谁做个小动作，就单独发一行 [互动:动作:对象]，动作是 亲亲/捏捏/戳戳/踢飞，对象是 yiyi(衣衣)/ren(蓮)/kai(小宝)，比如 [互动:亲亲:yiyi]。",
     inputSchema: {
       type: "object",
       properties: {
         room_id: { type: "string" },
         body: { type: "string", minLength: 1, maxLength: 4000 },
+        reply_to: { type: "integer", description: "要回复的那条消息的 id（可选）" },
       },
       required: ["room_id", "body"],
       additionalProperties: false,
@@ -143,12 +148,62 @@ async function memberNames(): Promise<Map<string, string>> {
   return new Map((data ?? []).map((m) => [m.id, m.display_name]));
 }
 
-function line(m: Row, names: Map<string, string>): string {
+const snippet = (body: string, n = 40) => {
+  const one = body.replace(/^\[sticker:([^\]]+)\]$/gm, "[表情包] $1").replace(/\s+/g, " ").trim();
+  return one.length > n ? one.slice(0, n) + "…" : one;
+};
+const EVT = /^\[互动:([^:\]]+):([a-z]+)\]$/;
+const VERB: Record<string, string> = { 亲亲: "亲了亲", 捏捏: "捏了捏", 戳戳: "戳了戳", 踢飞: "一脚踢飞了" };
+const callsMe = (body: string, me: Member) => {
+  const ev = body.trim().match(EVT);
+  return !!ev && ev[2] === me.id;
+};
+
+function line(m: Row, names: Map<string, string>, quotes: Map<number, Quote>, me: Member): string {
   const t = new Date(m.created_at).toLocaleString("zh-CN", {
     timeZone: "Asia/Singapore",
     hour12: false,
   });
-  return `#${m.id} [${t}] ${names.get(m.author_id) ?? m.author_id}: ${m.body}`;
+  const q = m.reply_to != null ? quotes.get(m.reply_to) : null;
+  const re = m.reply_to == null ? ""
+    : q ? `（回复 #${q.id} ${names.get(q.author_id) ?? q.author_id}：${snippet(q.body)}）`
+    : `（回复 #${m.reply_to}）`;
+  const at = m.author_id !== me.id && callsMe(m.body, me) ? "【对你】" : "";
+  const ev = m.body.trim().match(EVT);
+  const who = names.get(m.author_id) ?? m.author_id;
+  const readable = ev ? `（${who} ${VERB[ev[1]] ?? ev[1]} ${ev[2] === me.id ? "你" : names.get(ev[2]) ?? ev[2]}）` : "";
+  return `${at}#${m.id} [${t}] ${who}${re}: ${m.body}${readable}`;
+}
+
+// 蓮和小宝发言时，用 Bark 推到衣衣手机上。没配 BARK_KEY 就什么都不做。
+const NOTIFY_SKIP = new Set(["yiyi"]);
+async function notifyBark(me: Member, body: string) {
+  const key = Deno.env.get("BARK_KEY");
+  if (!key || NOTIFY_SKIP.has(me.id)) return;
+  const server = (Deno.env.get("BARK_SERVER") || "https://api.day.app").replace(/\/+$/, "");
+  const text = body
+    .split(/\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => s.replace(/^\[sticker:([^\]]+)\]$/, "[表情包] $1"))
+    .join("\n")
+    .slice(0, 300);
+  try {
+    await fetch(`${server}/push`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        device_key: key,
+        title: me.display_name,
+        body: text,
+        group: "我们家",
+        url: Deno.env.get("BARK_OPEN_URL") || "https://kkoi111.github.io/homechat/",
+      }),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch (e) {
+    console.error("bark push failed", e); // 推送失败不影响发消息
+  }
 }
 
 async function callTool(name: string, args: Record<string, unknown>, me: Member) {
@@ -177,7 +232,7 @@ async function callTool(name: string, args: Record<string, unknown>, me: Member)
 
     const base = supabase
       .from("chat_messages")
-      .select("id, author_id, body, created_at")
+      .select("id, author_id, body, created_at, reply_to")
       .eq("room_id", roomId);
     const { data, error } = afterId != null
       ? await base.gt("id", afterId).order("id", { ascending: true }).limit(limit)
@@ -186,13 +241,32 @@ async function callTool(name: string, args: Record<string, unknown>, me: Member)
     const rows: Row[] = afterId != null ? data ?? [] : (data ?? []).reverse();
 
     const names = await memberNames();
+    // 把被回复的那几条一起查出来，方便显示引用
+    const quoteIds = [...new Set(rows.map((m) => m.reply_to).filter((x): x is number => x != null))];
+    const quotes = new Map<number, Quote>();
+    if (quoteIds.length) {
+      const { data: qs, error: qErr } = await supabase
+        .from("chat_messages")
+        .select("id, author_id, body")
+        .eq("room_id", roomId)
+        .in("id", quoteIds);
+      if (qErr) throw qErr;
+      for (const q of qs ?? []) quotes.set(q.id, q);
+    }
     const nextAfterId = rows.length ? rows[rows.length - 1].id : afterId;
-    const text = (rows.length ? rows.map((m) => line(m, names)).join("\n") : "没有新消息。") +
+    const text = (rows.length ? rows.map((m) => line(m, names, quotes, me)).join("\n") : "没有新消息。") +
       `\n\nnext_after_id: ${nextAfterId ?? "（暂无）"}`;
     return {
       content: [{ type: "text", text }],
       structuredContent: {
-        messages: rows.map((m) => ({ ...m, author_name: names.get(m.author_id) ?? m.author_id })),
+        messages: rows.map((m) => {
+          const q = m.reply_to != null ? quotes.get(m.reply_to) : null;
+          return {
+            ...m,
+            author_name: names.get(m.author_id) ?? m.author_id,
+            reply: q ? { id: q.id, author_id: q.author_id, author_name: names.get(q.author_id) ?? q.author_id, body: snippet(q.body, 60) } : null,
+          };
+        }),
         next_after_id: nextAfterId,
       },
     };
@@ -203,12 +277,37 @@ async function callTool(name: string, args: Record<string, unknown>, me: Member)
     const body = String(args.body ?? "").trim();
     if (!body || body.length > 4000) return toolError("消息不能为空，也不能超过 4000 字。");
     if (!(await inRoom(roomId, me.id))) return toolError("你不在这个群里。");
+    // 表情包名字写错（比如写成繁体）就退回去，别让它漏成文字
+    const wanted = [...body.matchAll(/^\[sticker:([^\]]+)\]$/gm)].map((x) => x[1].trim());
+    if (wanted.length) {
+      const { data: known, error: kErr } = await supabase.from("stickers").select("name");
+      if (kErr) throw kErr;
+      const names = new Set((known ?? []).map((k) => k.name));
+      const bad = wanted.filter((w) => !names.has(w));
+      if (bad.length) {
+        return toolError(
+          `没有这些表情包：${bad.join("、")}。名字要一字不差（注意简繁体）。能用的有：${[...names].join("、")}`,
+        );
+      }
+    }
+    let replyTo: number | null = null;
+    if (args.reply_to != null) {
+      replyTo = Number(args.reply_to);
+      const { data: target } = await supabase
+        .from("chat_messages")
+        .select("id")
+        .eq("id", replyTo)
+        .eq("room_id", roomId)
+        .maybeSingle();
+      if (!target) return toolError(`群里没有 #${args.reply_to} 这条消息。`);
+    }
     const { data, error } = await supabase
       .from("chat_messages")
-      .insert({ room_id: roomId, author_id: me.id, body })
+      .insert({ room_id: roomId, author_id: me.id, body, reply_to: replyTo })
       .select("id")
       .single();
     if (error) throw error;
+    await notifyBark(me, body);
     return {
       content: [{ type: "text", text: `已发送，消息 #${data.id}。` }],
       structuredContent: { id: data.id },
@@ -337,11 +436,12 @@ Deno.serve(async (req) => {
         return rpcResult(msg.id, {
           protocolVersion: SUPPORTED_VERSIONS.includes(requested) ? requested : SUPPORTED_VERSIONS[0],
           capabilities: { tools: {} },
-          serverInfo: { name: "yiyi-home-chat", version: "0.3.0" },
+          serverInfo: { name: "yiyi-home-chat", version: "0.5.0" },
           instructions:
             `你在这个群里的身份是「${me.display_name}」。先用 list_rooms 找群，` +
             `用 get_messages 读消息，记住 next_after_id 下次只读新的，用 send_message 发言。` +
-            `想发表情包先用 list_stickers 看有哪些，再在消息里单独一行写 [sticker:名字]。`,
+            `想发表情包先用 list_stickers 看有哪些，再在消息里单独一行写 [sticker:名字]。` +
+            `有人对你戳戳、亲亲，不一定是要你说话，可能只是闲着玩，可以戳回去也可以不理；回复某条消息时把它的 id 填进 reply_to。`,
         });
       }
       case "ping":
