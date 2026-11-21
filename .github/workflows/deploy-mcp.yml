@@ -30,6 +30,6 @@ jobs:
           TOML
 
       - name: Deploy to Supabase
-        run: supabase functions deploy chat-mcp --project-ref sixkoxtwsslrnrfythmr --no-verify-jwt
+        run: supabase functions deploy chat-mcp --project-ref sixkoxtwsslrnrfythmr --no-verify-jwt --yes
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
