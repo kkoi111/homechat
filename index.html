@@ -458,7 +458,15 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
     $("stkBtn").setAttribute("aria-expanded", String(show));
     if (show) input.blur();
   }
+  let lastStickerFetch = 0;
+  function refreshStickersSoon() {
+    const now = Date.now();
+    if (now - lastStickerFetch < 15000) return; // 15 秒内最多拿一次
+    lastStickerFetch = now;
+    setTimeout(loadStickers, 0);
+  }
   async function loadStickers() {
+    lastStickerFetch = Date.now();
     try {
       const r = await call("list_stickers");
       stickers = Object.fromEntries((r.stickers || []).filter((s) => s.name && s.url).map((s) => [s.name, s]));
@@ -524,6 +532,8 @@ h1{margin:0;font-size:17px;font-weight:650;line-height:1.2}
         line.className = "line";
         const hit = text.match(STK);
         const stk = hit && stickers[hit[1].trim()];
+        // 别人刚加的表情包，这台手机上还没有，就去重新拿一次列表
+        if (hit && !stk) refreshStickersSoon();
         if (stk) {
           const img = document.createElement("img");
           img.className = "stk";
