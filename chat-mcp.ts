@@ -59,7 +59,38 @@ const TOOLS = [
       "列出群里能用的表情包：名字、什么时候用、图片地址。发的时候在 send_message 里单独一行写 [sticker:名字]。",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
+  {
+    name: "add_sticker",
+    description:
+      "添加或修改一个表情包。带 image_base64 时上传新图；只给 name 和 description 时只改已有表情包的备注。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", minLength: 1, maxLength: 20, description: "发的时候用的名字" },
+        description: { type: "string", maxLength: 200, description: "图上是什么、什么时候用" },
+        image_base64: { type: "string", description: "图片内容的 base64，不带 data: 前缀" },
+        content_type: { type: "string", description: "比如 image/png、image/gif" },
+      },
+      required: ["name"],
+      additionalProperties: false,
+    },
+  },
 ];
+
+const MAX_STICKER_BYTES = 4 * 1024 * 1024;
+const EXT: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/gif": "gif",
+  "image/webp": "webp",
+};
+
+function fromBase64(b64: string): Uint8Array {
+  const bin = atob(b64.replace(/^data:[^,]*,/, "").replace(/\s+/g, ""));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -205,6 +236,72 @@ async function callTool(name: string, args: Record<string, unknown>, me: Member)
     };
   }
 
+  if (name === "add_sticker") {
+    const stickerName = String(args.name ?? "").trim();
+    if (!stickerName || stickerName.length > 20 || /[\]\n\r\[]/.test(stickerName)) {
+      return toolError("名字要 1 到 20 个字，不能有方括号或换行。");
+    }
+    const description = args.description == null ? null : String(args.description).trim().slice(0, 200);
+
+    const { data: existing, error: findErr } = await supabase
+      .from("stickers")
+      .select("name, path, description")
+      .eq("name", stickerName)
+      .maybeSingle();
+    if (findErr) throw findErr;
+
+    // 只改备注
+    if (args.image_base64 == null) {
+      if (!existing) return toolError(`还没有叫「${stickerName}」的表情包，要上传图片才能新建。`);
+      if (description == null) return toolError("没有要改的内容。");
+      const { error } = await supabase.from("stickers").update({ description }).eq("name", stickerName);
+      if (error) throw error;
+      return {
+        content: [{ type: "text", text: `已更新「${stickerName}」的备注。` }],
+        structuredContent: { name: stickerName, updated: true },
+      };
+    }
+
+    // 上传新图
+    const contentType = String(args.content_type ?? "image/png").toLowerCase();
+    const ext = EXT[contentType];
+    if (!ext) return toolError("只支持 png、jpg、gif、webp。");
+    let bytes: Uint8Array;
+    try {
+      bytes = fromBase64(String(args.image_base64));
+    } catch {
+      return toolError("图片数据读不出来。");
+    }
+    if (!bytes.length) return toolError("图片是空的。");
+    if (bytes.length > MAX_STICKER_BYTES) return toolError("图片太大了，要小于 4 MB。");
+
+    const path = `${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("stickers")
+      .upload(path, bytes, { contentType, upsert: false });
+    if (upErr) throw upErr;
+
+    const { error: rowErr } = await supabase
+      .from("stickers")
+      .upsert({ name: stickerName, path, description: description ?? existing?.description ?? "" });
+    if (rowErr) {
+      await supabase.storage.from("stickers").remove([path]);
+      throw rowErr;
+    }
+    // 同名替换时，删掉旧图
+    if (existing && existing.path !== path) {
+      await supabase.storage.from("stickers").remove([existing.path]);
+    }
+    return {
+      content: [{ type: "text", text: `已${existing ? "替换" : "添加"}表情包「${stickerName}」。` }],
+      structuredContent: {
+        name: stickerName,
+        url: supabase.storage.from("stickers").getPublicUrl(path).data.publicUrl,
+        replaced: !!existing,
+      },
+    };
+  }
+
   return toolError(`没有这个工具：${name}`);
 }
 
@@ -240,7 +337,7 @@ Deno.serve(async (req) => {
         return rpcResult(msg.id, {
           protocolVersion: SUPPORTED_VERSIONS.includes(requested) ? requested : SUPPORTED_VERSIONS[0],
           capabilities: { tools: {} },
-          serverInfo: { name: "yiyi-home-chat", version: "0.2.0" },
+          serverInfo: { name: "yiyi-home-chat", version: "0.3.0" },
           instructions:
             `你在这个群里的身份是「${me.display_name}」。先用 list_rooms 找群，` +
             `用 get_messages 读消息，记住 next_after_id 下次只读新的，用 send_message 发言。` +
