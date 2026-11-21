@@ -1,0 +1,35 @@
+name: Deploy chat-mcp
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - chat-mcp.ts
+      - .github/workflows/deploy-mcp.yml
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Put the code where Supabase expects it
+        run: |
+          mkdir -p supabase/functions/chat-mcp
+          cp chat-mcp.ts supabase/functions/chat-mcp/index.ts
+          cat > supabase/config.toml <<'TOML'
+          project_id = "kRenshome"
+
+          [functions.chat-mcp]
+          verify_jwt = false
+          TOML
+
+      - name: Deploy to Supabase
+        run: supabase functions deploy chat-mcp --project-ref sixkoxtwsslrnrfythmr --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
